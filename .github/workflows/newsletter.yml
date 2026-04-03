@@ -1,0 +1,35 @@
+name: Daily Newsletter
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'  # 평일 09:00 KST (00:00 UTC)
+  workflow_dispatch:         # 수동 실행 버튼
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Generate newsletter & send to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python generate_newsletter.py daily --send --slack
+
+      - name: Commit & push generated HTML
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "Newsletter Bot"
+          git add outputs/
+          git diff --cached --quiet || git commit -m "feat: generate daily newsletter $(date +%Y-%m-%d)"
+          git push
