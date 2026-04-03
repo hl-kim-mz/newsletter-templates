@@ -11,8 +11,8 @@ from email.mime.text import MIMEText
 
 # --- CONFIGURATION ---
 SOURCE_URL = "https://news.hada.io/"
-TEMPLATE_PATH = "newsletter_templates/newsletter_template.html"
-OUTPUT_DIR = "newsletter_templates/outputs"
+TEMPLATE_PATH = "newsletter_template.html"
+OUTPUT_DIR = "outputs"
 RECIPIENT_EMAIL = "hlkim@mz.co.kr"
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
 
