@@ -14,8 +14,34 @@ from email.mime.text import MIMEText
 SOURCE_URL = "https://news.hada.io/"
 TEMPLATE_PATH = "newsletter_template.html"
 OUTPUT_DIR = "outputs"
+SENT_ARTICLES_PATH = "outputs/sent_articles.json"
 RECIPIENT_EMAIL = "hlkim@mz.co.kr"
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
+
+
+def load_sent_articles():
+    """이전에 발송된 기사 URL 목록을 로드합니다."""
+    if not os.path.exists(SENT_ARTICLES_PATH):
+        return set()
+    try:
+        with open(SENT_ARTICLES_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            return set(data.get('urls', []))
+    except Exception as e:
+        print(f"Warning: sent_articles.json 로드 실패: {e}")
+        return set()
+
+
+def save_sent_articles(sent_urls):
+    """발송된 기사 URL 목록을 저장합니다."""
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+    try:
+        with open(SENT_ARTICLES_PATH, 'w', encoding='utf-8') as f:
+            json.dump({'urls': list(sent_urls), 'updated_at': datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
+        print(f"sent_articles.json 업데이트 완료 (총 {len(sent_urls)}개 기사 기록)")
+    except Exception as e:
+        print(f"Warning: sent_articles.json 저장 실패: {e}")
 
 
 def send_slack(title, news_items, today_str):
@@ -61,6 +87,18 @@ def send_slack(title, news_items, today_str):
         print(f"Error: Slack 발송 중 오류가 발생했습니다: {e}")
 
 
+def send_slack_simple(message):
+    """단순 텍스트 메시지를 Slack으로 발송합니다."""
+    if not SLACK_WEBHOOK_URL:
+        return
+    try:
+        requests.post(SLACK_WEBHOOK_URL, data=json.dumps({"text": message}),
+                      headers={'Content-Type': 'application/json'},
+                      proxies={"http": None, "https": None}, timeout=15)
+    except Exception:
+        pass
+
+
 def send_email(subject, html_body, recipient):
     """지정된 수신자에게 HTML 이메일을 보냅니다."""
     smtp_server = os.environ.get('SMTP_SERVER')
@@ -103,7 +141,6 @@ def send_email(subject, html_body, recipient):
 
 def get_soup(url):
     """지정된 URL의 HTML을 파싱하여 BeautifulSoup 객체를 반환합니다."""
-    # 직접 연결 먼저 시도, 실패 시 기본 프록시 설정으로 재시도
     for proxy_setting in [{"http": None, "https": None}, None]:
         try:
             kwargs = {"timeout": 15}
@@ -281,6 +318,24 @@ def main(mode, send, slack):
 
     print(f"{len(news_data)}개의 뉴스 아이템을 찾았습니다.")
 
+    # --- 중복 제거 ---
+    sent_urls = load_sent_articles()
+    new_news_data = [item for item in news_data if item['url'] not in sent_urls]
+    skipped = len(news_data) - len(new_news_data)
+
+    if skipped > 0:
+        print(f"이전에 발송된 기사 {skipped}개 제외 → 새 기사 {len(new_news_data)}개")
+
+    if not new_news_data:
+        msg = f"ℹ️ [뉴스레터봇] 오늘은 새로운 기사가 없습니다. 발송을 건너뜁니다. ({datetime.now().strftime('%Y-%m-%d')})"
+        print(msg)
+        if slack:
+            send_slack_simple(msg)
+        return
+
+    news_data = new_news_data
+    # --- 중복 제거 끝 ---
+
     today_str = datetime.now().strftime("%Y년 %m월 %d일")
     title_map = {
         'daily': 'AI GeekNews 일간 인기글',
@@ -293,7 +348,7 @@ def main(mode, send, slack):
     if slack:
         send_slack(title=title_map[mode], news_items=news_data, today_str=today_str)
 
-    # 이메일 발송 (HTML 파일 생성 필요)
+    # HTML 파일 생성 및 이메일 발송
     if send:
         try:
             with open(TEMPLATE_PATH, 'r', encoding='utf-8') as f:
@@ -329,6 +384,10 @@ def main(mode, send, slack):
         print(f"성공! '{output_path}' 파일이 생성되었습니다.")
 
         send_email(subject=newsletter_subject, html_body=final_html, recipient=RECIPIENT_EMAIL)
+
+    # 발송 완료 후 sent_articles.json 업데이트
+    sent_urls.update(item['url'] for item in news_data)
+    save_sent_articles(sent_urls)
 
 
 if __name__ == "__main__":
