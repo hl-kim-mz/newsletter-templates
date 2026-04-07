@@ -1,59 +1,58 @@
 name: Daily Newsletter
 
 on:
-    schedule:
-      - cron: '0 0 * * 1-5'
-    workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1-5'  # 평일 09:00 KST (00:00 UTC)
+  workflow_dispatch:         # 수동 실행 버튼
 
-  jobs:
-    generate:
-      runs-on: ubuntu-latest
-      permissions:
-        contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-        - name: Send start notification
-          run: |
-            curl -s -X POST -H 'Content-type: application/json' \
-              --data "{\"text\":\"🚀 [뉴스레터봇] 뉴스레터 생성을 시작합니다. ($(date '+%Y-%m-%d %H:%M') UTC)\"}" \
-              "${{ secrets.STATUS_WEBHOOK_URL }}"
+      - name: Send start notification
+        run: |
+          curl -s -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"🚀 [뉴스레터봇] 뉴스레터 생성을 시작합니다. ($(date '+%Y-%m-%d %H:%M') UTC)\"}" \
+            "${{ secrets.STATUS_WEBHOOK_URL }}"
 
-        - name: Set up Python
-          uses: actions/setup-python@v5
-          with:
-            python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-        - name: Install dependencies
-          run: pip install requests beautifulsoup4
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
 
-        - name: Generate newsletter & send to Slack
-          env:
-            SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          run: python generate_newsletter.py daily --send --slack
+      - name: Generate newsletter & send to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python generate_newsletter.py daily --send --slack
 
-        - name: Commit & push generated HTML
-          run: |
-            git config user.email "action@github.com"
-            git config user.name "Newsletter Bot"
-            git add outputs/
-            git diff --cached --quiet || git commit -m "feat: generate daily newsletter $(date +%Y-%m-%d)"
-            git push
+      - name: Commit & push generated HTML
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "Newsletter Bot"
+          git add outputs/
+          git diff --cached --quiet || git commit -m "feat: generate daily newsletter $(date +%Y-%m-%d)"
+          git push
 
-        - name: Send success notification
-          if: success()
-          run: |
-            FILE=$(ls outputs/*.html 2>/dev/null | sort | tail -1)
-            curl -s -X POST -H 'Content-type: application/json' \
-              --data "{\"text\":\"✅ [뉴스레터봇] 오늘의 뉴스레터 발송 완료! 파일: ${FILE##*/} — GitHub 커밋 완료\"}" \
-              "${{ secrets.STATUS_WEBHOOK_URL }}"
+      - name: Send success notification
+        if: success()
+        run: |
+          FILE=$(ls outputs/*.html 2>/dev/null | sort | tail -1)
+          curl -s -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"✅ [뉴스레터봇] 오늘의 뉴스레터 발송 완료! 파일: ${FILE##*/} — GitHub 커밋 완료\"}" \
+            "${{ secrets.STATUS_WEBHOOK_URL }}"
 
-        - name: Send failure notification
-          if: failure()
-          run: |
-            curl -s -X POST -H 'Content-type: application/json' \
-              --data "{\"text\":\"❌ [뉴스레터봇] 워크플로우 실패 — 로그 확인:
-  https://github.com/hl-kim-mz/newsletter-templates/actions\"}" \
-              "${{ secrets.STATUS_WEBHOOK_URL }}"
+      - name: Send failure notification
+        if: failure()
+        run: |
+          curl -s -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"❌ [뉴스레터봇] 워크플로우 실패 — GitHub Actions 로그를 확인하세요: https://github.com/hl-kim-mz/newsletter-templates/actions\"}" \
+            "${{ secrets.STATUS_WEBHOOK_URL }}"
