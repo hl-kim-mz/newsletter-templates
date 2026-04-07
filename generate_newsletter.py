@@ -5,6 +5,7 @@ from datetime import datetime
 import argparse
 import os
 import json
+import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -156,28 +157,58 @@ def parse_news(soup, mode):
 
 def generate_html_content(news_items):
     """뉴스 아이템 리스트로부터 HTML 콘텐츠 블록을 생성합니다."""
+    article_tpl = (
+        '                            <!-- Article {num} -->\n'
+        '                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">\n'
+        '                                <tr>\n'
+        '                                    <td style="border-left: 3px solid #4a9fff; padding-left: 18px; padding-top: 4px; padding-bottom: 4px;">\n'
+        '                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">\n'
+        '                                            <tr>\n'
+        '                                                <td style="padding-bottom: 8px;">\n'
+        '                                                    <span style="display: inline-block; background-color: #eef3fc; color: #2856a0; font-family: \'IBM Plex Mono\', \'Courier New\', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1px; padding: 3px 10px; border-radius: 3px;">No.{num_padded}</span>\n'
+        '                                                </td>\n'
+        '                                            </tr>\n'
+        '                                            <tr>\n'
+        '                                                <td style="padding-bottom: 10px;">\n'
+        '                                                    <h3 style="margin: 0; font-family: \'Noto Serif KR\', Georgia, serif; color: #17325b; font-size: 17px; font-weight: 600; line-height: 1.5;">\n'
+        '                                                        <a href="{url}" style="color: #17325b; text-decoration: none;">{title}</a>\n'
+        '                                                    </h3>\n'
+        '                                                </td>\n'
+        '                                            </tr>\n'
+        '                                            <tr>\n'
+        '                                                <td style="padding-bottom: 16px;">\n'
+        '                                                    <p style="margin: 0; color: #4a5568; font-size: 14px; line-height: 1.8;">{summary}</p>\n'
+        '                                                </td>\n'
+        '                                            </tr>\n'
+        '                                            <tr>\n'
+        '                                                <td>\n'
+        '                                                    <a href="{url}" style="display: inline-block; color: #2856a0; font-size: 13px; font-weight: 600; text-decoration: none; border-bottom: 1.5px solid #4a9fff; padding-bottom: 1px; letter-spacing: 0.2px;">자세히 읽기 →</a>\n'
+        '                                                </td>\n'
+        '                                            </tr>\n'
+        '                                        </table>\n'
+        '                                    </td>\n'
+        '                                </tr>\n'
+        '                            </table>\n'
+    )
+    separator = (
+        '                            <!-- Separator -->\n'
+        '                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">\n'
+        '                                <tr>\n'
+        '                                    <td style="height: 1px; background-color: #e8ecf4; font-size: 0;">&nbsp;</td>\n'
+        '                                </tr>\n'
+        '                            </table>\n'
+    )
     content_html = ""
-    for item in news_items:
-        item_html = f'''
-        <tr>
-            <td style="padding: 20px 0; border-bottom: 1px solid #e9ecef;">
-                <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                        <td valign="top">
-                            <h3 style="margin: 0 0 10px; color: #212529; font-size: 18px; font-weight: 600;">
-                                <a href="{item['url']}" style="color: #17325b; text-decoration: none;">{item['title']}</a>
-                            </h3>
-                            <p style="margin: 0 0 15px; color: #495057; font-size: 15px; line-height: 1.7;">
-                                {item['summary']}
-                            </p>
-                            <a href="{item['url']}" style="background-color: #17325b; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold; display: inline-block;">더 알아보기</a>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        '''
-        content_html += item_html
+    for i, item in enumerate(news_items, 1):
+        content_html += article_tpl.format(
+            num=i,
+            num_padded=f"{i:02d}",
+            url=item['url'],
+            title=item['title'],
+            summary=item['summary']
+        )
+        if i < len(news_items):
+            content_html += separator
     return content_html
 
 
@@ -272,11 +303,14 @@ def main(mode, send, slack):
             return
 
         content_html = generate_html_content(news_data)
-        start_marker, end_marker = '<!-- CONTENT ROWS GO HERE -->', '<!-- End Example Content Block 2 -->'
+        start_marker = '<!-- Article 1 -->'
+        end_marker_pattern = r'<!-- CONTENT ROWS GO HERE[^>]*-->'
         try:
             start_index = template_html.index(start_marker)
-            end_index_search_area = template_html[start_index:]
-            end_index = start_index + end_index_search_area.index('</tr>', end_index_search_area.index(end_marker)) + len('</tr>')
+            end_match = re.search(end_marker_pattern, template_html[start_index:])
+            if not end_match:
+                raise ValueError("End marker not found")
+            end_index = start_index + end_match.end()
             final_html = template_html[:start_index] + content_html + template_html[end_index:]
         except ValueError:
             print("Warning: 템플릿에서 콘텐츠 마커를 찾지 못했습니다.")
