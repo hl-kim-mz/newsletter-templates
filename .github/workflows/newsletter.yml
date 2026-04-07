@@ -1,4 +1,4 @@
- name: Daily Newsletter
+name: Daily Newsletter
 
   on:
     schedule:
