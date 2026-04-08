@@ -1,15 +1,16 @@
 {
   "urls": [
-    "https://github.com/VoltAgent/awesome-design-md",
     "https://github.com/JuliusBrussee/caveman",
-    "https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f",
     "https://magazine.sebastianraschka.com/p/components-of-a-coding-agent",
-    "https://github.com/arman-bd/guppylm",
-    "https://github.com/rtk-ai/rtk",
     "https://github.com/InsForge/InsForge",
+    "https://news.hada.io/",
     "https://ergosphere.blog/posts/the-machines-are-fine/",
     "https://lalitm.com/post/building-syntaqlite-ai/",
-    "https://ai.georgeliu.com/p/running-google-gemma-4-locally-with"
+    "https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f",
+    "https://github.com/arman-bd/guppylm",
+    "https://github.com/VoltAgent/awesome-design-md",
+    "https://ai.georgeliu.com/p/running-google-gemma-4-locally-with",
+    "https://github.com/rtk-ai/rtk"
   ],
-  "updated_at": "2026-04-07T02:04:56.679219"
+  "updated_at": "2026-04-08T00:18:11.604748"
 }
