@@ -1,16 +1,23 @@
 {
   "urls": [
-    "https://github.com/addyosmani/agent-skills",
-    "https://news.hada.io/topic?id=28353",
-    "https://github.com/usestrix/strix",
     "https://blog.google/products-and-platforms/products/search/google-finance-expansion/",
-    "https://github.com/garrytan/gbrain",
-    "https://news.hada.io/topic?id=28343",
-    "https://bits-bytes-nn.github.io/insights/agentic-ai/2026/04/05/evolution-of-ai-agentic-patterns.html",
-    "https://astral.sh/blog/open-source-security-at-astral",
-    "https://news.hada.io/",
+    "https://www.anthropic.com/engineering/managed-agents",
     "https://flowkater.io/posts/2026-04-08-ax-team-paradox/",
-    "https://piechowski.io/post/git-commands-before-reading-code/"
+    "https://news.hada.io/topic?id=28353",
+    "https://github.com/garrytan/gbrain",
+    "https://cobusgreyling.medium.com/hyperagents-by-meta-892580e14f5b",
+    "https://github.com/addyosmani/agent-skills",
+    "https://github.com/usestrix/strix",
+    "https://piechowski.io/post/git-commands-before-reading-code/",
+    "https://hackers.pub/@gnh1201/2026/%EB%A9%94%EB%AA%A8%EC%9E%A5-%EB%A7%8C%EC%9C%BC%EB%A1%9C-mcp-%EC%84%9C%EB%B2%84-%EC%9E%91%EC%84%B1%ED%95%98%EA%B8%B0",
+    "https://news.hada.io/",
+    "https://news.hada.io/topic?id=28343",
+    "https://astral.sh/blog/open-source-security-at-astral",
+    "https://news.hada.io/topic?id=28441",
+    "https://bits-bytes-nn.github.io/insights/agentic-ai/2026/04/05/evolution-of-ai-agentic-patterns.html",
+    "https://github.com/glommer/pgmicro",
+    "https://news.hada.io/topic?id=28466",
+    "https://news.hada.io/topic?id=28436"
   ],
-  "updated_at": "2026-04-13T01:06:31.754987"
+  "updated_at": "2026-04-13T01:14:32.414983"
 }
