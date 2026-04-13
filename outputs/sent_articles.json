@@ -1,16 +1,16 @@
 {
   "urls": [
-    "https://news.hada.io/topic?id=28353",
-    "https://astral.sh/blog/open-source-security-at-astral",
-    "https://news.hada.io/",
     "https://github.com/addyosmani/agent-skills",
-    "https://flowkater.io/posts/2026-04-08-ax-team-paradox/",
+    "https://news.hada.io/topic?id=28353",
+    "https://github.com/usestrix/strix",
+    "https://blog.google/products-and-platforms/products/search/google-finance-expansion/",
+    "https://github.com/garrytan/gbrain",
     "https://news.hada.io/topic?id=28343",
     "https://bits-bytes-nn.github.io/insights/agentic-ai/2026/04/05/evolution-of-ai-agentic-patterns.html",
-    "https://piechowski.io/post/git-commands-before-reading-code/",
-    "https://github.com/garrytan/gbrain",
-    "https://github.com/usestrix/strix",
-    "https://blog.google/products-and-platforms/products/search/google-finance-expansion/"
+    "https://astral.sh/blog/open-source-security-at-astral",
+    "https://news.hada.io/",
+    "https://flowkater.io/posts/2026-04-08-ax-team-paradox/",
+    "https://piechowski.io/post/git-commands-before-reading-code/"
   ],
-  "updated_at": "2026-04-10T01:08:40.884639"
+  "updated_at": "2026-04-13T01:06:31.754987"
 }
