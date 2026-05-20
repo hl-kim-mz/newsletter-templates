@@ -46,6 +46,10 @@ def save_sent_articles(sent_urls):
 
 def send_slack(title, news_items, today_str):
     """Slack Incoming Webhook으로 뉴스레터를 발송합니다."""
+    if not SLACK_WEBHOOK_URL:
+        print("Error: SLACK_WEBHOOK_URL 환경 변수가 설정되지 않았습니다.")
+        return False
+
     print("\nSlack 발송을 시작합니다...")
 
     emoji_map = {'daily': ':newspaper:', 'weekly': ':calendar:', 'monthly': ':mega:'}
@@ -81,22 +85,27 @@ def send_slack(title, news_items, today_str):
                              proxies={"http": None, "https": None}, timeout=15)
         if resp.status_code == 200 and resp.text == 'ok':
             print("성공! Slack 채널에 뉴스레터를 발송했습니다.")
+            return True
         else:
             print(f"Error: Slack 발송 실패 (status={resp.status_code}, body={resp.text})")
+            return False
     except Exception as e:
         print(f"Error: Slack 발송 중 오류가 발생했습니다: {e}")
+        return False
 
 
 def send_slack_simple(message):
     """단순 텍스트 메시지를 Slack으로 발송합니다."""
     if not SLACK_WEBHOOK_URL:
-        return
+        return False
     try:
-        requests.post(SLACK_WEBHOOK_URL, data=json.dumps({"text": message}),
-                      headers={'Content-Type': 'application/json'},
-                      proxies={"http": None, "https": None}, timeout=15)
-    except Exception:
-        pass
+        resp = requests.post(SLACK_WEBHOOK_URL, data=json.dumps({"text": message}),
+                             headers={'Content-Type': 'application/json'},
+                             proxies={"http": None, "https": None}, timeout=15)
+        return resp.status_code == 200 and resp.text == 'ok'
+    except Exception as e:
+        print(f"Error: Slack 알림 발송 중 오류가 발생했습니다: {e}")
+        return False
 
 
 def send_email(subject, html_body, recipient):
@@ -110,7 +119,7 @@ def send_email(subject, html_body, recipient):
         print("\n--- 이메일 발송 실패 ---")
         print("이메일 발송에 필요한 환경 변수가 모두 설정되지 않았습니다.")
         print("필요한 환경 변수: SMTP_SERVER, SMTP_PORT, EMAIL_USER, EMAIL_PASSWORD")
-        return
+        return False
 
     print("\n이메일 발송을 시작합니다...")
     try:
@@ -134,9 +143,11 @@ def send_email(subject, html_body, recipient):
                 server.send_message(msg)
 
         print(f"성공! '{recipient}'에게 이메일을 성공적으로 발송했습니다.")
+        return True
 
     except Exception as e:
         print(f"Error: 이메일 발송 중 오류가 발생했습니다: {e}")
+        return False
 
 
 def get_soup(url):
@@ -165,10 +176,14 @@ def parse_news(soup, mode):
         if not section: return news_items
         articles = section.find_all('div', class_='topic_row', limit=10)
         for article in articles:
-            title_tag = article.find('h1')
+            title_tag = article.find(['h1', 'h2'], class_='topic-title-heading')
+            if not title_tag:
+                title_tag = article.find(['h1', 'h2'])
             if not title_tag: continue
             title = title_tag.get_text(strip=True)
-            url = title_tag.find_parent('a')['href']
+            link_tag = title_tag.find_parent('a')
+            if not link_tag or not link_tag.get('href'): continue
+            url = link_tag['href']
             if not url.startswith('http'): url = SOURCE_URL.rstrip('/') + url if url.startswith('/') else SOURCE_URL + url
             summary_tag = article.find('a', class_='c99')
             summary = summary_tag.get_text(strip=True) if summary_tag else "요약 정보가 없습니다."
@@ -343,10 +358,11 @@ def main(mode, send, slack):
         'monthly': 'AI GeekNews 월간 인기글'
     }
     newsletter_subject = f"[{title_map[mode]}] {today_str}"
+    delivery_succeeded = False
 
     # Slack 발송
     if slack:
-        send_slack(title=title_map[mode], news_items=news_data, today_str=today_str)
+        delivery_succeeded = send_slack(title=title_map[mode], news_items=news_data, today_str=today_str) or delivery_succeeded
 
     # HTML 파일 생성 및 이메일 발송
     if send:
@@ -383,11 +399,16 @@ def main(mode, send, slack):
             f.write(final_html)
         print(f"성공! '{output_path}' 파일이 생성되었습니다.")
 
-        send_email(subject=newsletter_subject, html_body=final_html, recipient=RECIPIENT_EMAIL)
+        delivery_succeeded = send_email(subject=newsletter_subject, html_body=final_html, recipient=RECIPIENT_EMAIL) or delivery_succeeded
 
-    # 발송 완료 후 sent_articles.json 업데이트
-    sent_urls.update(item['url'] for item in news_data)
-    save_sent_articles(sent_urls)
+    # 실제 발송 성공 후에만 sent_articles.json 업데이트
+    if delivery_succeeded:
+        sent_urls.update(item['url'] for item in news_data)
+        save_sent_articles(sent_urls)
+    elif send or slack:
+        print("발송 성공이 확인되지 않아 sent_articles.json을 업데이트하지 않습니다.")
+    else:
+        print("생성 전용 실행이므로 sent_articles.json을 업데이트하지 않습니다.")
 
 
 if __name__ == "__main__":
