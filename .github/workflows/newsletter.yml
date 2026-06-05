@@ -32,6 +32,7 @@ jobs:
       - name: Generate newsletter & send to Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL_2: ${{ secrets.SLACK_WEBHOOK_URL_2 }}
         run: python generate_newsletter.py daily --send --slack
 
       - name: Commit & push generated HTML

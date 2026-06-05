@@ -16,7 +16,12 @@ TEMPLATE_PATH = "newsletter_template.html"
 OUTPUT_DIR = "outputs"
 SENT_ARTICLES_PATH = "outputs/sent_articles.json"
 RECIPIENT_EMAIL = "hlkim@mz.co.kr"
-SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
+SLACK_WEBHOOK_URLS = [
+    url for url in [
+        os.environ.get('SLACK_WEBHOOK_URL', ''),
+        os.environ.get('SLACK_WEBHOOK_URL_2', ''),
+    ] if url
+]
 
 
 def load_sent_articles():
@@ -46,7 +51,7 @@ def save_sent_articles(sent_urls):
 
 def send_slack(title, news_items, today_str):
     """Slack Incoming Webhook으로 뉴스레터를 발송합니다."""
-    if not SLACK_WEBHOOK_URL:
+    if not SLACK_WEBHOOK_URLS:
         print("Error: SLACK_WEBHOOK_URL 환경 변수가 설정되지 않았습니다.")
         return False
 
@@ -78,34 +83,40 @@ def send_slack(title, news_items, today_str):
         blocks.append({"type": "divider"})
 
     payload = {"blocks": blocks}
+    all_ok = True
 
-    try:
-        resp = requests.post(SLACK_WEBHOOK_URL, data=json.dumps(payload),
-                             headers={'Content-Type': 'application/json'},
-                             proxies={"http": None, "https": None}, timeout=15)
-        if resp.status_code == 200 and resp.text == 'ok':
-            print("성공! Slack 채널에 뉴스레터를 발송했습니다.")
-            return True
-        else:
-            print(f"Error: Slack 발송 실패 (status={resp.status_code}, body={resp.text})")
-            return False
-    except Exception as e:
-        print(f"Error: Slack 발송 중 오류가 발생했습니다: {e}")
-        return False
+    for i, webhook_url in enumerate(SLACK_WEBHOOK_URLS, 1):
+        try:
+            resp = requests.post(webhook_url, data=json.dumps(payload),
+                                 headers={'Content-Type': 'application/json'},
+                                 proxies={"http": None, "https": None}, timeout=15)
+            if resp.status_code == 200 and resp.text == 'ok':
+                print(f"성공! Slack 채널 #{i}에 뉴스레터를 발송했습니다.")
+            else:
+                print(f"Error: Slack 채널 #{i} 발송 실패 (status={resp.status_code}, body={resp.text})")
+                all_ok = False
+        except Exception as e:
+            print(f"Error: Slack 채널 #{i} 발송 중 오류가 발생했습니다: {e}")
+            all_ok = False
+
+    return all_ok
 
 
 def send_slack_simple(message):
     """단순 텍스트 메시지를 Slack으로 발송합니다."""
-    if not SLACK_WEBHOOK_URL:
+    if not SLACK_WEBHOOK_URLS:
         return False
-    try:
-        resp = requests.post(SLACK_WEBHOOK_URL, data=json.dumps({"text": message}),
-                             headers={'Content-Type': 'application/json'},
-                             proxies={"http": None, "https": None}, timeout=15)
-        return resp.status_code == 200 and resp.text == 'ok'
-    except Exception as e:
-        print(f"Error: Slack 알림 발송 중 오류가 발생했습니다: {e}")
-        return False
+    for webhook_url in SLACK_WEBHOOK_URLS:
+        try:
+            resp = requests.post(webhook_url, data=json.dumps({"text": message}),
+                                 headers={'Content-Type': 'application/json'},
+                                 proxies={"http": None, "https": None}, timeout=15)
+            if not (resp.status_code == 200 and resp.text == 'ok'):
+                return False
+        except Exception as e:
+            print(f"Error: Slack 알림 발송 중 오류가 발생했습니다: {e}")
+            return False
+    return True
 
 
 def send_email(subject, html_body, recipient):
