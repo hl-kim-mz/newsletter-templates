@@ -89,7 +89,7 @@ def send_slack(title, news_items, today_str):
         try:
             resp = requests.post(webhook_url, data=json.dumps(payload),
                                  headers={'Content-Type': 'application/json'},
-                                 proxies={"http": None, "https": None}, timeout=15)
+                                 timeout=15)
             if resp.status_code == 200 and resp.text == 'ok':
                 print(f"성공! Slack 채널 #{i}에 뉴스레터를 발송했습니다.")
             else:
@@ -110,7 +110,7 @@ def send_slack_simple(message):
         try:
             resp = requests.post(webhook_url, data=json.dumps({"text": message}),
                                  headers={'Content-Type': 'application/json'},
-                                 proxies={"http": None, "https": None}, timeout=15)
+                                 timeout=15)
             if not (resp.status_code == 200 and resp.text == 'ok'):
                 return False
         except Exception as e:
@@ -142,11 +142,11 @@ def send_email(subject, html_body, recipient):
 
         port = int(smtp_port)
         if port == 465:
-            with smtplib.SMTP_SSL(smtp_server, port) as server:
+            with smtplib.SMTP_SSL(smtp_server, port, timeout=30) as server:
                 server.login(email_user, email_password)
                 server.send_message(msg)
         else:
-            with smtplib.SMTP(smtp_server, port) as server:
+            with smtplib.SMTP(smtp_server, port, timeout=30) as server:
                 server.ehlo()
                 server.starttls()
                 server.ehlo()
@@ -163,9 +163,12 @@ def send_email(subject, html_body, recipient):
 
 def get_soup(url):
     """지정된 URL의 HTML을 파싱하여 BeautifulSoup 객체를 반환합니다."""
-    for proxy_setting in [{"http": None, "https": None}, None]:
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; newsletter-bot/1.0)"}
+    # 첫 번째 시도: 환경변수 프록시 자동 적용(None 전달 안 함)
+    # 두 번째 시도: 프록시 명시 비활성화(직접 연결 강제)
+    for proxy_setting in [None, {"http": None, "https": None}]:
         try:
-            kwargs = {"timeout": 15}
+            kwargs = {"timeout": 15, "headers": headers}
             if proxy_setting is not None:
                 kwargs["proxies"] = proxy_setting
             response = requests.get(url, **kwargs)
