@@ -1,8 +1,12 @@
 # coding: utf-8
-"""오늘의 최신 AI 뉴스로 뉴스레터를 생성합니다 (news.hada.io 접근 불가 시 사용)."""
-import generate_newsletter as gn
+"""수동으로 지정한 뉴스 목록으로 뉴스레터를 생성합니다 (news.hada.io 접근 불가 시 사용).
+
+generate_newsletter.py는 수집에 실패하면 발송을 중단합니다. 사이트가 막혀 있는데도
+그날의 뉴스레터를 꼭 내보내야 할 때, 아래 TODAY_NEWS를 직접 채워서 이 스크립트를 실행하세요.
+"""
 import sys
-import os
+
+import generate_newsletter as gn
 
 TODAY_NEWS = [
     {
@@ -58,15 +62,11 @@ TODAY_NEWS = [
 ]
 
 def main():
-    gn.FALLBACK_NEWS.clear()
-    gn.FALLBACK_NEWS.extend(TODAY_NEWS)
+    if not TODAY_NEWS:
+        print("Error: TODAY_NEWS가 비어 있습니다. 발송할 기사를 직접 채워 넣으세요.")
+        return 1
+    return gn.main("daily", send=True, slack=True, news_override=TODAY_NEWS)
 
-    mode = "daily"
-    send = True
-    slack = True
-
-    print(f"'{mode}' 모드로 뉴스레터 생성을 시작합니다.")
-    gn.main(mode, send, slack)
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

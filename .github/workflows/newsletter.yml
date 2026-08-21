@@ -40,8 +40,11 @@ jobs:
           git config user.email "action@github.com"
           git config user.name "Newsletter Bot"
           git add outputs/
-          git diff --cached --quiet || git commit -m "feat: generate daily newsletter $(date +%Y-%m-%d)"
-          git push
+          git diff --cached --quiet && exit 0
+          git commit -m "feat: generate daily newsletter $(date +%Y-%m-%d)"
+          # 다른 자동화가 먼저 push했을 수 있으므로 rebase 후 push한다
+          git pull --rebase origin main
+          git push origin main
 
       - name: Send success notification
         if: success()
