@@ -135,7 +135,7 @@ GitHub 레포지토리 → Settings → Secrets and variables → Actions에서 
 | Secret 이름 | 설명 |
 |-------------|------|
 | `SLACK_WEBHOOK_URL` | 뉴스레터 본문 발송용 Slack Incoming Webhook URL |
-| `SLACK_WEBHOOK_URL_2` | 추가 발송 채널 (선택) |
+| `SLACK_WEBHOOK_URL_2` | 추가 발송 채널 (선택, 현재 워크플로우에서 주석 처리됨) |
 | `STATUS_WEBHOOK_URL` | 시작/성공/실패 상태 알림 채널 |
 
 > 이메일 발송이 필요한 경우 `EMAIL_USER`, `EMAIL_PASSWORD`도 추가하고 워크플로우에서 `--send` 옵션을 활성화하세요.

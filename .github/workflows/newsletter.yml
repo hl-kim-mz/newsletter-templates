@@ -32,7 +32,9 @@ jobs:
       - name: Generate newsletter & send to Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_URL_2: ${{ secrets.SLACK_WEBHOOK_URL_2 }}
+          # SLACK_WEBHOOK_URL_2는 404(no_service)로 죽어 있어 매 실행마다 발송 실패 로그만 남긴다.
+          # 두 번째 발송 채널이 다시 필요해지면 유효한 웹훅으로 시크릿을 갱신하고 아래 줄을 되살릴 것.
+          # SLACK_WEBHOOK_URL_2: ${{ secrets.SLACK_WEBHOOK_URL_2 }}
         run: python generate_newsletter.py daily --send --slack
 
       - name: Commit & push generated HTML
